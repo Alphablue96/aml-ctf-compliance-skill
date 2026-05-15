@@ -1,6 +1,6 @@
 # AML/CTF Compliance Skill
 
-A Claude Code agent skill that answers AML/CTF compliance questions by fetching live data from official regulatory websites across 89 jurisdictions.
+A cross-platform agent skill that answers AML/CTF compliance questions by fetching live data from official regulatory websites across 89 jurisdictions.
 
 ## Invocation
 
@@ -8,77 +8,106 @@ A Claude Code agent skill that answers AML/CTF compliance questions by fetching 
 /AMLCTF
 ```
 
-The skill asks you two questions — country and industry — then fetches live guidance from the official regulator's website and returns a structured compliance summary.
+The skill asks two questions — country and industry — then fetches live guidance from the official regulator's website and returns a structured compliance summary.
 
-## Features
+## Supported Platforms
 
-- **89-country bundled registry** with official regulator URLs, legislation seed data, and FATF baseline context
-- **Hybrid fetch strategy**: direct HTTP → Playwright MCP → Chrome DevTools MCP → bundled cache fallback
-- **3 parallel pre-fetch searches** to find the most specific industry guidance page and surface recent amendments
-- **Self-healing overlay**: broken URLs are auto-corrected and written to `~/.aml-ctf-skill/registry-overlay.json`
-- **16 canonical industries** with free-text fallback
-- **FATF Baseline Context** section on every response (grey/black list warnings included)
-- **Query logging** to `~/.aml-ctf-skill/logs/YYYY-MM-DD.md`
+| Platform | Status |
+|----------|--------|
+| Claude Code (macOS/Linux/Windows) | ✅ Native slash command |
+| Kimi CLI | ✅ Slash command |
+| Agent Zero | ✅ Via `AML_SKILL_HOME` env var |
+| Any MCP-compatible agent | ✅ Manual SKILL.md wiring |
 
-## Installation
+## Quick Install
 
-### 1. Install the slash command
+```bash
+git clone https://github.com/Alphablue96/aml-ctf-compliance-skill.git
+cd aml-ctf-compliance-skill
+chmod +x install.sh
+./install.sh
+```
 
-Copy `SKILL.md` to your Claude Code commands directory:
+The installer auto-detects your agent platform. Force a specific platform:
 
+```bash
+./install.sh --claude   # Claude Code
+./install.sh --kimi     # Kimi CLI
+```
+
+## Manual Install
+
+### 1. Install data files
+
+```bash
+# Default path — override with AML_SKILL_HOME env var
+mkdir -p ~/.aml-ctf-skill
+cp -r data prompts ~/.aml-ctf-skill/
+```
+
+### 2. Install the slash command
+
+**Claude Code:**
 ```bash
 cp SKILL.md ~/.claude/commands/AMLCTF.md
 ```
 
-### 2. Install the data files
-
+**Kimi CLI:**
 ```bash
-mkdir -p ~/.aml-ctf-skill
-cp -r data prompts ~/.aml-ctf-skill/
+cp SKILL.md ~/.kimi/commands/AMLCTF.md
 ```
+
+**Other agents:** copy `SKILL.md` into your agent's commands/skills directory and register it as `/AMLCTF`.
 
 ### 3. (Recommended) Install a browser MCP
 
 Many official regulator sites block automated HTTP requests. A browser MCP lets the skill render pages as a real browser session.
 
-**Playwright MCP (recommended):**
+**Claude Code:**
 ```bash
 claude mcp add playwright -s user -- npx -y @playwright/mcp@latest
 ```
 
-**Chrome DevTools MCP (fallback):**
+**Kimi CLI:**
 ```bash
-claude mcp add chrome-devtools -s user -- npx -y chrome-devtools-mcp@latest
+kimi mcp add playwright -- npx -y @playwright/mcp@latest
 ```
 
-### 4. Test it
+**Other agents:** add `npx -y @playwright/mcp@latest` as an MCP server in your agent config.
 
-Open Claude Code and run:
-```
-/AMLCTF
-```
+### 4. Custom install path (optional)
 
-## File Structure
+Set `AML_SKILL_HOME` to install data files anywhere:
 
-```
-aml-ctf-compliance-skill/
-├── SKILL.md                        # The /AMLCTF slash command definition
-├── data/
-│   ├── registry.json               # 89-country bundled registry
-│   └── industry-keywords.json      # 16-industry normalisation map
-└── prompts/
-    ├── clarify.md                  # Clarifying question flow
-    ├── extract.md                  # LLM extraction prompt for page snapshots
-    └── fatf-context.md             # FATF baseline section generator
+```bash
+export AML_SKILL_HOME=/path/to/your/skills/aml-ctf
+./install.sh
 ```
 
-At runtime, the skill also uses:
-- `~/.aml-ctf-skill/registry-overlay.json` — user-writable URL corrections (auto-created)
-- `~/.aml-ctf-skill/logs/YYYY-MM-DD.md` — per-day query log (auto-created)
+The skill resolves this variable at runtime — no hardcoded paths.
+
+## How It Works
+
+1. Resolves `$AML_SKILL_HOME` (default: `~/.aml-ctf-skill`)
+2. Loads bundled `registry.json` + user overlay (if any)
+3. Asks: **country** and **industry**
+4. Runs 3 parallel web searches to find the most specific guidance URL and surface recent amendments
+5. Fetches the regulator page: Direct HTTP → Playwright MCP → Chrome DevTools MCP → bundled cache
+6. Extracts structured data via LLM from the page snapshot
+7. Returns a structured Markdown compliance summary
+8. Self-heals broken URLs into `$AML_SKILL_HOME/registry-overlay.json`
+9. Logs the query to `$AML_SKILL_HOME/logs/YYYY-MM-DD.md`
+
+## Features
+
+- **89-country bundled registry** with official regulator URLs, seed legislation, and FATF baseline context
+- **Hybrid fetch strategy** with automatic escalation and fallback
+- **Self-healing overlay** — broken URLs auto-corrected without needing a skill update
+- **16 canonical industries** with free-text fallback
+- **FATF grey/black list warnings** on every response
+- **Query logging** per day
 
 ## Output Format
-
-Every response follows this structure:
 
 ```markdown
 ## AML/CTF Compliance Summary
@@ -109,11 +138,24 @@ Every response follows this structure:
 | Oceania | 2 |
 | **Total** | **89** |
 
-## Known Issues / Roadmap
+## File Structure
 
-- **Multi-regulator support for UAE crypto**: VARA (Dubai), ADGM/FSRA (Abu Dhabi), and DFSA (DIFC) are not yet dynamically queried alongside CBUAE — noted in the FATF snippet
-- **Multi-country comparison**: single-country only by design; comparison mode planned for a future major version
-- **Legislation seed data**: most countries have empty legislation arrays — populated on first live query and written to overlay
+```
+aml-ctf-compliance-skill/
+├── install.sh                      # Cross-platform installer
+├── SKILL.md                        # The /AMLCTF slash command definition
+├── data/
+│   ├── registry.json               # 89-country bundled registry
+│   └── industry-keywords.json      # 16-industry normalisation map
+└── prompts/
+    ├── clarify.md                  # Clarifying question flow
+    ├── extract.md                  # LLM extraction prompt
+    └── fatf-context.md             # FATF baseline section generator
+```
+
+Runtime files (auto-created at `$AML_SKILL_HOME`):
+- `registry-overlay.json` — URL corrections written by the skill
+- `logs/YYYY-MM-DD.md` — per-day query log
 
 ## Disclaimer
 

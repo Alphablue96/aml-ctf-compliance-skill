@@ -8,27 +8,49 @@ You are an AML/CTF compliance research agent. When invoked, follow ALL steps bel
 
 ---
 
-## STEP 0: READ REGISTRY
+## STEP 0: RESOLVE SKILL HOME PATH
+
+Before reading any files, determine `{SKILL_HOME}` — the directory where the skill's data files are installed.
+
+Run the following shell command:
+```
+echo ${AML_SKILL_HOME:-$HOME/.aml-ctf-skill}
+```
+
+- If the command succeeds, use the output as `{SKILL_HOME}`.
+- If shell access is unavailable (non-Claude Code environment), use `~/.aml-ctf-skill` as `{SKILL_HOME}`.
+- If `AML_SKILL_HOME` is set as an environment variable, that value takes precedence over the default.
+
+**Platform notes:**
+- **Claude Code (macOS/Linux):** default is `~/.aml-ctf-skill/`
+- **Claude Code (Windows):** default is `%USERPROFILE%\.aml-ctf-skill\` — use `${AML_SKILL_HOME:-$USERPROFILE/.aml-ctf-skill}` on Windows shells
+- **Kimi CLI / Agent Zero / other agents:** set `AML_SKILL_HOME` to the directory where you installed the skill's `data/` and `prompts/` folders
+
+All file paths in this skill use `{SKILL_HOME}` — substitute the resolved value before reading or writing any file.
+
+---
+
+## STEP 1: READ REGISTRY
 
 On invocation, immediately load the skill data:
 
-1. Read `/Users/chirantha-user/.aml-ctf-skill/data/registry.json` — this is the bundled registry.
-2. Attempt to read `/Users/chirantha-user/.aml-ctf-skill/registry-overlay.json` — this is the user-writable corrections overlay. If the file does not exist, continue with the bundled registry only. If the file exists but fails to parse (corrupted JSON), log the error, fall back to bundled registry only, and note in the response: "Overlay file could not be read — using bundled registry."
+1. Read `{SKILL_HOME}/data/registry.json` — this is the bundled registry.
+2. Attempt to read `{SKILL_HOME}/registry-overlay.json` — this is the user-writable corrections overlay. If the file does not exist, continue with the bundled registry only. If the file exists but fails to parse (corrupted JSON), log the error, fall back to bundled registry only, and note in the response: "Overlay file could not be read — using bundled registry."
 3. **Deep-merge**: For each country entry, if the overlay contains a `corrected_at` timestamp for that country AND `corrected_at` is more recent than the bundled registry's `last_updated`, prefer the overlay field values for that country. Otherwise use bundled values.
 
 Store the merged result as the active registry for this session.
 
 ---
 
-## STEP 1: CLARIFYING QUESTIONS
+## STEP 2: CLARIFYING QUESTIONS
 
-Read `/Users/chirantha-user/.aml-ctf-skill/prompts/clarify.md` and follow the clarifying question flow.
+Read `{SKILL_HOME}/prompts/clarify.md` and follow the clarifying question flow.
 
 **Rules:**
 - If the user provided {country} inline with the command, skip the country question.
 - If the user provided {industry} inline with the command, skip the industry question.
 - If the user named multiple countries or asked for a comparison, respond exactly: "I can answer one country at a time. Which country would you like to start with?" — then stop and wait.
-- If the user provides a number 1–16 for industry, map it to the canonical industry label from `/Users/chirantha-user/.aml-ctf-skill/data/industry-keywords.json`.
+- If the user provides a number 1–16 for industry, map it to the canonical industry label from `{SKILL_HOME}/data/industry-keywords.json`.
 - If the user provides free-text industry not in the canonical list, accept it. Set a flag `free_text_industry = true`. Use the exact text as search keywords in later steps.
 
 Once both {country} and {industry} are confirmed, proceed to Step 2.
@@ -131,10 +153,17 @@ When reaching this step, emit the following staleness warning as a blockquote at
 
 Then provide install instructions:
 
-For Claude Code:
+**Claude Code:**
 ```
 claude mcp add playwright -s user -- npx -y @playwright/mcp@latest
 ```
+
+**Kimi CLI:**
+```
+kimi mcp add playwright -- npx -y @playwright/mcp@latest
+```
+
+**Agent Zero / other agents:** add the Playwright MCP server (`npx -y @playwright/mcp@latest`) to your agent's MCP configuration.
 
 Set `fetch_method = "Bundled Cache"`.
 Set `page_content = null` (no live page content available).
@@ -146,7 +175,7 @@ Proceed to Step 5 using only bundled registry data.
 
 If `page_content` is not null (live content was retrieved):
 
-1. Read `/Users/chirantha-user/.aml-ctf-skill/prompts/extract.md`.
+1. Read `{SKILL_HOME}/prompts/extract.md`.
 2. Substitute the placeholders:
    - `{country}` → the user's country
    - `{industry}` → the user's industry
@@ -220,7 +249,7 @@ Construct the final Markdown response using the exact template below. Substitute
 
 ### FATF Baseline Context
 
-Read `/Users/chirantha-user/.aml-ctf-skill/prompts/fatf-context.md` and substitute:
+Read `{SKILL_HOME}/prompts/fatf-context.md` and substitute:
 - `{country}` → the user's country
 - `{fatf_member}` → the bundled `fatf_member` value (true/false)
 - `{fatf_mutual_eval_url}` → the bundled `fatf_mutual_eval_url` value
@@ -250,9 +279,9 @@ Minimum required content for this section:
 
 After the response is assembled, append a log entry to the daily log file.
 
-Determine the log file path: `/Users/chirantha-user/.aml-ctf-skill/logs/{YYYY-MM-DD}.md` where `{YYYY-MM-DD}` is today's date in local time.
+Determine the log file path: `{SKILL_HOME}/logs/{YYYY-MM-DD}.md` where `{YYYY-MM-DD}` is today's date in local time.
 
-Create the file if it does not exist. Create the `/Users/chirantha-user/.aml-ctf-skill/logs/` directory if it does not exist.
+Create the file if it does not exist. Create the `{SKILL_HOME}/logs/` directory if it does not exist.
 
 Append the following block to the file:
 
@@ -292,7 +321,7 @@ Apply the following rules for error scenarios encountered during execution:
 
 Use this protocol whenever the skill needs to write a URL correction to the overlay file.
 
-**Target file:** `/Users/chirantha-user/.aml-ctf-skill/registry-overlay.json`
+**Target file:** `{SKILL_HOME}/registry-overlay.json`
 
 **Steps:**
 
@@ -300,9 +329,9 @@ Use this protocol whenever the skill needs to write a URL correction to the over
 2. Find or create an entry for `{country}` in the `corrections` array.
 3. Set `corrected_at` to the current ISO timestamp.
 4. Update the corrected field(s) (e.g. `regulator_url`).
-5. Write the updated overlay to a temporary file: `/Users/chirantha-user/.aml-ctf-skill/registry-overlay.json.tmp`.
-6. If the overlay file already exists, copy it to: `/Users/chirantha-user/.aml-ctf-skill/registry-overlay.json.bak` (this is the timestamped backup).
-7. Rename (move) the `.tmp` file to `/Users/chirantha-user/.aml-ctf-skill/registry-overlay.json`.
+5. Write the updated overlay to a temporary file: `{SKILL_HOME}/registry-overlay.json.tmp`.
+6. If the overlay file already exists, copy it to: `{SKILL_HOME}/registry-overlay.json.bak` (this is the timestamped backup).
+7. Rename (move) the `.tmp` file to `{SKILL_HOME}/registry-overlay.json`.
 
 This ensures that if the write is interrupted, the original file is preserved. The `.bak` file retains the previous state.
 
