@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-05-15",
+  "industries": [
+    {
+      "id": "banking",
+      "label": "Banking / Finance",
+      "keywords": ["banking", "financial institution", "bank"]
+    },
+    {
+      "id": "legal",
+      "label": "Legal",
+      "keywords": ["legal", "lawyer", "law firm", "solicitor", "barrister"]
+    },
+    {
+      "id": "accounting",
+      "label": "Accounting",
+      "keywords": ["accounting", "accountant", "auditor", "audit"]
+    },
+    {
+      "id": "real_estate",
+      "label": "Real Estate",
+      "keywords": ["real estate", "property", "realtor", "estate agent"]
+    },
+    {
+      "id": "precious_metals",
+      "label": "Precious Metals / Dealers",
+      "keywords": ["precious metals", "dealer", "high-value dealer", "jeweller"]
+    },
+    {
+      "id": "tcsp",
+      "label": "Trust / Company Service Providers",
+      "keywords": ["TCSP", "trust", "company service", "corporate service"]
+    },
+    {
+      "id": "crypto",
+      "label": "Crypto / VASP",
+      "keywords": ["crypto", "virtual asset", "VASP", "digital asset", "cryptocurrency"]
+    },
+    {
+      "id": "gaming",
+      "label": "Gaming / Casino",
+      "keywords": ["gaming", "casino", "gambling", "betting"]
+    },
+    {
+      "id": "npo",
+      "label": "Non-profit / NPO",
+      "keywords": ["non-profit", "NPO", "NGO", "charity", "not-for-profit"]
+    },
+    {
+      "id": "fintech",
+      "label": "Fintech",
+      "keywords": ["fintech", "financial technology", "neobank"]
+    },
+    {
+      "id": "insurance",
+      "label": "Insurance",
+      "keywords": ["insurance", "insurer", "underwriting"]
+    },
+    {
+      "id": "money_services",
+      "label": "Money Services",
+      "keywords": ["money services", "MSB", "remittance", "money transfer"]
+    },
+    {
+      "id": "securities",
+      "label": "Securities",
+      "keywords": ["securities", "broker-dealer", "investment firm", "stockbroker"]
+    },
+    {
+      "id": "payments",
+      "label": "Payments",
+      "keywords": ["payments", "payment services", "PSP", "e-money"]
+    },
+    {
+      "id": "crowdfunding",
+      "label": "Crowdfunding",
+      "keywords": ["crowdfunding", "peer-to-peer lending", "P2P"]
+    },
+    {
+      "id": "virtual_assets",
+      "label": "Virtual Assets (standalone)",
+      "keywords": ["virtual asset service provider", "VASP"]
+    }
+  ]
+}

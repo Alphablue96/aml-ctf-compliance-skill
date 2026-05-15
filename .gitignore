@@ -1,0 +1,8 @@
+# Runtime files (created by the skill at query time, not part of the package)
+registry-overlay.json
+registry-overlay.json.tmp
+registry-overlay.json.bak
+logs/
+
+# macOS
+.DS_Store
