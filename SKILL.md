@@ -1,3 +1,28 @@
+---
+name: aml-ctf-compliance
+description: >-
+  Answers AML/CTF compliance questions by fetching live guidance from official
+  regulatory websites across 89 jurisdictions. Invoke with /AMLCTF — the skill
+  asks for a country and industry, runs parallel web searches to find the most
+  specific regulator page, escalates through Direct HTTP → Playwright MCP →
+  Chrome DevTools MCP → bundled cache fallback, and returns a structured
+  Markdown summary covering the official regulator, key legislation, recent
+  amendments, industry-specific requirements, and FATF baseline context
+  (including grey/black list warnings). Self-heals broken URLs via a
+  user-writable overlay. Supports 16 canonical industries with free-text
+  fallback. Single-country per invocation.
+license: MIT
+compatibility: >-
+  Requires an MCP-compatible agent with web search and file read/write tools.
+  Tested on Claude Code. Compatible with Kimi CLI and Agent Zero via
+  AML_SKILL_HOME env var. A browser MCP (Playwright or Chrome DevTools) is
+  recommended for bot-blocked regulator sites but not required.
+metadata:
+  author: Alphablue96
+  version: "1.0"
+  tags: aml ctf compliance regulatory legal finance kyc fatf
+---
+
 # AML/CTF Compliance Skill — /AMLCTF
 
 **Skill Name:** aml-ctf-compliance
